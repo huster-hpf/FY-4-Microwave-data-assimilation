@@ -1,0 +1,117 @@
+function dielectric_constant=Land_Dielectric_Constant(fraction_clay_ref_val,SM)%%%输入分别为土壤黏土含量百分比（0~1）以及土壤湿度（0~0.8）
+SM1_Thld=0.2;
+PERMIT0=8.854e-12;
+EPWI0=4.9;
+ND0=1.62847;
+ND1=-0.70803;
+ND2=0.4659;
+KD0=0.03945;
+KD1=-0.03721;
+XMVT0=0.00625;
+XMVT1=0.33918;
+TF0=20;
+E0PB0=79.82918;
+E0PB1=-85.36581;
+E0PB2=32.70444;
+BVB0=-5.96311e-19;
+BVB1=-1.25999e-3;
+BVB2=1.83991e-3;
+BVB3=-9.77347e-4;
+BVB4=-1.39013e-7;
+BSGB0=0.0028;
+BSGB1=2.37388e-2;
+BSGB2=-2.93876e-2;
+BSGB3=3.28954e-2;
+BSGB4=-2.00582e-2;
+DHBR0=1466.80741;
+DHBR1=26.97032e2;
+DHBR2=-0.09803e4;
+DSRB0=0.88775;
+DSRB1=0.09697e2;
+DSRB2=-4.2622;
+TAUB0=48e-12;
+SBT0=0.29721;
+SBT1=0.49;
+E0PU=100;
+BVU0=1.10511e-4;
+BVU1=-5.16834e-6;
+BSGU0=0.00277;
+BSGU1=3.58315e-2;
+DHUR0=2230.20237;
+DHUR1=-0.39234e2;
+DSUR0=3.6439;
+DSUR1=-0.00134e2;
+TAUU0=48e-12;
+SUT0=0.12799;
+SUT1=1.65164;
+Central_Freq_Of_Microwave_Sensor=1.4e9;
+effective_soil_temp_ref_val=288;
+soil_moisture_ref_val=SM;
+k=1;
+M_AVA=1;
+C=fraction_clay_ref_val;
+TK=effective_soil_temp_ref_val;
+TC=effective_soil_temp_ref_val-273.15;
+f=Central_Freq_Of_Microwave_Sensor;
+while k<=M_AVA
+        epsilong_b0=E0PB0+E0PB1*C(k)+E0PB2*(C(k))^2;
+        F_b=log((epsilong_b0-1)/(epsilong_b0+2));
+        beta_b=BVB0+BVB1*C(k)+BVB2*(C(k))^2+BVB3*(C(k))^3+BVB4*(C(k))^4;
+        epsilong_0b=(1+2*exp(F_b-beta_b*(TC(k)-TF0)))/(1-exp(F_b-beta_b*(TC(k)-TF0)));
+        DeltaS_b=DSRB0+DSRB1*C(k)+DSRB2*(C(k))^2;
+        DeltaH_b=DHBR0+DHBR1*C(k)+DHBR2*(C(k))^2;
+        tau_b=(TAUB0*exp(DeltaH_b/TK(k)-DeltaS_b))/TK(k);
+        beta_sigmab=BSGB0+BSGB1*C(k)+BSGB2*(C(k))^2+BSGB3*(C(k))^3+BSGB4*(C(k))^4;
+        sigma_b=SBT0+SBT1*C(k)+beta_sigmab*(TC(k)-TF0);
+        epsilong_wb1=(EPWI0+(epsilong_0b-EPWI0))/(1+(2*pi*f*tau_b)^2);
+        epsilong_wb2=2*pi*f*tau_b*(epsilong_0b-EPWI0)/(1+(2*pi*f*tau_b)^2)+sigma_b/(2*pi*f*PERMIT0);
+        k_b=(sqrt(sqrt(epsilong_wb1^2+epsilong_wb2^2)-epsilong_wb1))/sqrt(2);
+        n_b=(sqrt(sqrt(epsilong_wb1^2+epsilong_wb2^2)+epsilong_wb1))/sqrt(2);
+        n_d=ND0+ND1*C(k)+ND2*(C(k))^2;
+        k_d=KD0+KD1*C(k);
+        b=n_d+(n_b-1)*SM1_Thld;
+        a=k_d+k_b*SM1_Thld;
+        E_y=2*a*b;
+        E_x=b^2-a^2;
+        DE_y=2*a*(n_b-1)-2*k_b*b;
+        DE_x=2*b*(n_b-1)-2*k_b*a;
+        DeltaH_u=DHUR0+DHUR1*C(k);
+        DeltaS_u=DSUR0+DSUR1*C(k);
+        tau_u=(TAUU0*exp(DeltaH_u/TK(k)-DeltaS_u))/TK(k);
+        beta_sigmau=BSGU0+BSGU1*C(k);
+        sigma_u=SUT0+SUT1*C(k)+beta_sigmau*(TC(k)-TF0);
+        epsilong_u0=E0PU;
+        beta_u=BVU0+BVU1*C(k);
+        F_u=log((epsilong_u0-1)/(epsilong_u0+2))-beta_u*(TC(k)-TF0);
+        epsilong_0u=(1+2*exp(F_u-beta_u*(TC(k)-TF0)))/(1-exp(F_u-beta_u*(TC(k)-TF0)));
+        epsilong_wu2=2*pi*f*tau_u*(epsilong_0u-EPWI0)/(1+(2*pi*f*tau_u)^2)+sigma_u/(2*pi*f*PERMIT0);
+        epsilong_wu1=(EPWI0+(epsilong_0u-EPWI0))/(1+(2*pi*f*tau_u)^2);
+        k_u=(sqrt(sqrt(epsilong_wu1^2+epsilong_wu2^2)-epsilong_wu1))/sqrt(2);
+        n_u=(sqrt(sqrt(epsilong_wu1^2+epsilong_wu2^2)+epsilong_wu1))/sqrt(2);
+        xm_vt=XMVT0+XMVT1*C(k);
+    if(abs(SM(k))>SM1_Thld)
+        Re(k)=(0.5*DE_x/SM1_Thld)*(SM(k))^2+(E_x-0.5*DE_x*SM1_Thld);
+        Im(k)=-(0.5*DE_y/SM1_Thld)*(SM(k))^2+(E_y-0.5*DE_y*SM1_Thld);
+    else
+        if(SM(k)>=xm_vt)
+            TERM1=(n_u-1)*(SM(k)-xm_vt);
+        else
+            TERM1=0;
+        end
+         if(SM(k)>=xm_vt)
+                TERM2=k_u*(SM(k)-xm_vt);
+            else
+                TERM2=0;
+         end
+            NM(k)=(n_d+(n_b-1)*min(SM(k),xm_vt)+TERM1)^2;
+            KM(k)=(k_d+k_b*min(SM(k),xm_vt)+TERM2);
+            Re(k)=NM(k)^2-KM(k)^2;
+            Im(k)=-2*NM(k)*KM(k);
+    end
+    dielectric_constant(k)=Re(k)-Im(k)*1i;
+    k=k+1;
+end
+  
+      
+        
+        
